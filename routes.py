@@ -148,11 +148,9 @@ def logout():
 
 @app.route('/services')
 def service_list():
-    # Get search parameters
     search_query = request.args.get('q', '')
     category_id = request.args.get('category')
     
-    # Build the query
     query = Service.query
     
     if search_query:
@@ -252,7 +250,6 @@ def add_service():
             flash('An error occurred while adding the service. Please try again.', 'danger')
             return redirect(url_for('add_service'))
     
-    # Get all main categories with their subcategories
     categories = ServiceCategory.query.filter_by(parent_id=None).all()
     tags = ServiceTag.query.all()
     return render_template('provider_service_add.html', categories=categories, tags=tags)
@@ -334,7 +331,6 @@ def edit_service(service_id):
             flash('An error occurred while updating the service. Please try again.', 'danger')
             return redirect(url_for('edit_service', service_id=service_id))
     
-    # Get all main categories with their subcategories and tags for the form
     categories = ServiceCategory.query.filter_by(parent_id=None).all()
     tags = ServiceTag.query.all()
     return render_template('provider_service_edit.html', service=service, categories=categories, tags=tags)
@@ -349,6 +345,13 @@ def delete_service(service_id):
         return redirect(url_for('dashboard'))
     
     try:
+        # Delete portfolio images
+        if service.portfolio_images:
+            for image in service.portfolio_images:
+                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+        
         db.session.delete(service)
         db.session.commit()
         flash('Service deleted successfully!', 'success')
@@ -435,3 +438,55 @@ def update_profile_image():
         flash('Error updating profile image', 'danger')
     
     return redirect(url_for('dashboard'))
+
+@app.route('/service/<int:service_id>/rate', methods=['GET', 'POST'])
+@login_required
+def rate_service(service_id):
+    service = Service.query.get_or_404(service_id)
+    
+    # Check if the user has a completed request for this service
+    request = ServiceRequest.query.filter_by(
+        service_id=service_id,
+        client_id=current_user.id,
+        status='accepted'
+    ).first()
+    
+    if not request:
+        flash('You can only rate services you have used', 'danger')
+        return redirect(url_for('service_detail', id=service_id))
+    
+    # Check if user has already rated this service
+    existing_rating = Rating.query.filter_by(
+        service_id=service_id,
+        client_id=current_user.id
+    ).first()
+    
+    if existing_rating:
+        flash('You have already rated this service', 'danger')
+        return redirect(url_for('service_detail', id=service_id))
+    
+    if request.method == 'POST':
+        rating_value = request.form.get('rating')
+        comment = request.form.get('comment')
+        
+        if not rating_value or not comment or len(comment) < 10:
+            flash('Please provide both rating and comment', 'danger')
+            return redirect(url_for('rate_service', service_id=service_id))
+        
+        try:
+            rating = Rating(
+                service_id=service_id,
+                client_id=current_user.id,
+                rating=int(rating_value),
+                comment=comment
+            )
+            db.session.add(rating)
+            db.session.commit()
+            flash('Thank you for your review!', 'success')
+            return redirect(url_for('service_detail', id=service_id))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while submitting your review. Please try again.', 'danger')
+            return redirect(url_for('rate_service', service_id=service_id))
+    
+    return render_template('rate_service.html', service=service)

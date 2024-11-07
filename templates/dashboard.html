@@ -141,8 +141,16 @@
                             <small class="text-muted">Status: {{ request.status }}</small>
                         </div>
                         {% if request.status == 'accepted' %}
-                        <span class="badge bg-success">Accepted</span>
-                        {% elif request.status == 'declined' %}
+                        <div class="mt-2">
+                            {% if not request.service.ratings|selectattr('client_id', 'equalto', current_user.id)|list %}
+                            <a href="{{ url_for('rate_service', service_id=request.service.id) }}" 
+                               class="btn btn-outline-primary btn-sm">Rate Service</a>
+                            {% else %}
+                            <span class="badge bg-success">Rated</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if request.status == 'declined' %}
                         <span class="badge bg-danger">Declined</span>
                         {% else %}
                         <span class="badge bg-warning">Pending</span>
