@@ -1,6 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
+from sqlalchemy import or_
 from app import app, db
 from models import User, Service, ServiceRequest, Rating, ServiceTag, ServiceCategory
 from urllib.parse import urlparse
@@ -147,8 +148,32 @@ def logout():
 
 @app.route('/services')
 def service_list():
-    services = Service.query.all()
-    return render_template('service_list.html', services=services)
+    # Get search parameters
+    search_query = request.args.get('q', '')
+    category_id = request.args.get('category')
+    
+    # Build the query
+    query = Service.query
+    
+    if search_query:
+        search_terms = f"%{search_query}%"
+        query = query.filter(
+            or_(
+                Service.title.ilike(search_terms),
+                Service.description.ilike(search_terms),
+                Service.tags.any(ServiceTag.name.ilike(search_terms))
+            )
+        )
+    
+    if category_id:
+        query = query.filter(Service.category_id == category_id)
+    
+    services = query.all()
+    categories = ServiceCategory.query.filter_by(parent_id=None).all()
+    
+    return render_template('service_list.html', 
+                         services=services,
+                         categories=categories)
 
 @app.route('/service/<int:id>')
 def service_detail(id):
