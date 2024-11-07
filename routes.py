@@ -244,16 +244,60 @@ def edit_service(service_id):
     if request.method == 'POST':
         title = request.form.get('title')
         description = request.form.get('description')
+        detailed_description = request.form.get('detailed_description')
         rate = request.form.get('rate')
+        project_rate = request.form.get('project_rate')
+        category_id = request.form.get('category_id')
+        tag_names = request.form.getlist('tags')
+        availability = request.form.get('availability')
+        remove_images = request.form.getlist('remove_images')
         
-        if not all([title, description, rate]):
-            flash('Please fill in all fields', 'danger')
+        if not all([title, description, rate, category_id]):
+            flash('Please fill in all required fields', 'danger')
             return redirect(url_for('edit_service', service_id=service_id))
         
         try:
+            # Update basic information
             service.title = title
             service.description = description
+            service.detailed_description = detailed_description
             service.rate = float(rate)
+            service.project_rate = float(project_rate) if project_rate else None
+            service.category_id = category_id
+            
+            # Update availability
+            if availability:
+                service.availability = json.loads(availability)
+            
+            # Handle portfolio images
+            portfolio_images = list(service.portfolio_images or [])
+            # Remove selected images
+            for image in remove_images:
+                if image in portfolio_images:
+                    portfolio_images.remove(image)
+                    # Delete the file
+                    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+            
+            # Add new images
+            for file in request.files.getlist('portfolio_images'):
+                if file:
+                    filepath = save_image(file, 'portfolio')
+                    if filepath:
+                        portfolio_images.append(filepath)
+            
+            service.portfolio_images = portfolio_images
+
+            # Update tags
+            service.tags = []
+            for tag_name in tag_names:
+                tag = ServiceTag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = ServiceTag(name=tag_name)
+                    db.session.add(tag)
+                service.tags.append(tag)
+            
             db.session.commit()
             flash('Service updated successfully!', 'success')
             return redirect(url_for('dashboard'))
@@ -265,7 +309,10 @@ def edit_service(service_id):
             flash('An error occurred while updating the service. Please try again.', 'danger')
             return redirect(url_for('edit_service', service_id=service_id))
     
-    return render_template('provider_service_edit.html', service=service)
+    # Get all main categories with their subcategories and tags for the form
+    categories = ServiceCategory.query.filter_by(parent_id=None).all()
+    tags = ServiceTag.query.all()
+    return render_template('provider_service_edit.html', service=service, categories=categories, tags=tags)
 
 @app.route('/service/delete/<int:service_id>', methods=['POST'])
 @login_required

@@ -16,7 +16,7 @@
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
-                <form method="POST" class="needs-validation" novalidate>
+                <form method="POST" class="needs-validation" enctype="multipart/form-data" novalidate>
                     <div class="mb-3">
                         <label for="title" class="form-label">Service Title</label>
                         <input type="text" class="form-control" id="title" name="title" 
@@ -25,22 +25,169 @@
                             Title must be between 5 and 100 characters.
                         </div>
                     </div>
+
                     <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
+                        <label for="category_id" class="form-label">Service Category</label>
+                        <select class="form-select" id="category_id" name="category_id" required>
+                            <option value="">Select a category...</option>
+                            {% for main_category in categories %}
+                                <optgroup label="{{ main_category.name }}">
+                                    {% for subcategory in main_category.subcategories %}
+                                        <option value="{{ subcategory.id }}" 
+                                                {% if service.category_id == subcategory.id %}selected{% endif %}>
+                                            {{ subcategory.name }}
+                                        </option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a service category.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Short Description (Summary)</label>
                         <textarea class="form-control" id="description" name="description" 
-                                  rows="4" required minlength="20">{{ service.description }}</textarea>
+                                  rows="2" required minlength="20">{{ service.description }}</textarea>
                         <div class="invalid-feedback">
                             Description must be at least 20 characters long.
                         </div>
                     </div>
+
                     <div class="mb-3">
-                        <label for="rate" class="form-label">Hourly Rate ($)</label>
-                        <input type="number" class="form-control" id="rate" name="rate" 
-                               value="{{ service.rate }}" required min="0" step="0.01">
-                        <div class="invalid-feedback">
-                            Please enter a valid hourly rate.
+                        <label for="detailed_description" class="form-label">Detailed Description</label>
+                        <textarea class="form-control" id="detailed_description" name="detailed_description" 
+                                  rows="6">{{ service.detailed_description }}</textarea>
+                        <div class="form-text">
+                            Provide comprehensive details about your service.
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Service Tags</label>
+                        <div class="border rounded p-3">
+                            <div class="row">
+                                {% for tag in tags %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="tags" 
+                                               id="tag_{{ tag.id }}" value="{{ tag.name }}"
+                                               {% if tag in service.tags %}checked{% endif %}>
+                                        <label class="form-check-label" for="tag_{{ tag.id }}">{{ tag.name }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Pricing Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="rate" class="form-label">Hourly Rate ($)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="rate" name="rate" 
+                                               value="{{ service.rate }}" required min="0" step="0.01">
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid hourly rate.
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="project_rate" class="form-label">Project Rate ($) (Optional)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="project_rate" name="project_rate" 
+                                               value="{{ service.project_rate or '' }}" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Availability Schedule</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="availability-container">
+                                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                <div class="mb-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" 
+                                               id="day_{{ day.lower() }}" data-day="{{ day.lower() }}"
+                                               {% if service.availability and day.lower() in service.availability %}checked{% endif %}>
+                                        <label class="form-check-label" for="day_{{ day.lower() }}">
+                                            {{ day }}
+                                        </label>
+                                    </div>
+                                    <div class="row day-times" id="times_{{ day.lower() }}"
+                                         style="display: {% if service.availability and day.lower() in service.availability %}flex{% else %}none{% endif %}">
+                                        <div class="col-6">
+                                            <label class="form-label">Start Time</label>
+                                            <input type="time" class="form-control start-time" 
+                                                   data-day="{{ day.lower() }}"
+                                                   value="{{ service.availability[day.lower()]['start'] if service.availability and day.lower() in service.availability else '' }}">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">End Time</label>
+                                            <input type="time" class="form-control end-time" 
+                                                   data-day="{{ day.lower() }}"
+                                                   value="{{ service.availability[day.lower()]['end'] if service.availability and day.lower() in service.availability else '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="availability" id="availability-json">
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Portfolio Images</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if service.portfolio_images %}
+                            <div class="row mb-3">
+                                {% for image in service.portfolio_images %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <img src="{{ url_for('static', filename=image) }}" class="card-img-top" alt="Portfolio image">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_images" 
+                                                       value="{{ image }}" id="remove_{{ loop.index }}">
+                                                <label class="form-check-label" for="remove_{{ loop.index }}">
+                                                    Remove
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="portfolio_images" class="form-label">Add New Images</label>
+                                <input type="file" class="form-control" id="portfolio_images" name="portfolio_images" 
+                                       multiple accept="image/*">
+                                <div class="form-text">
+                                    Upload new images to your portfolio. Select multiple files if needed.
+                                </div>
+                            </div>
+                            <div id="image-preview" class="row mt-3">
+                                <!-- New image previews will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Save Changes</button>
                         <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
@@ -54,13 +201,71 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
+    const availabilityContainer = document.getElementById('availability-container');
+    const availabilityJson = document.getElementById('availability-json');
+    const portfolioInput = document.getElementById('portfolio_images');
+    const imagePreview = document.getElementById('image-preview');
     
+    // Form validation
     form.addEventListener('submit', function(event) {
         if (!form.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();
         }
+        
+        // Collect availability data
+        const availability = {};
+        const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+        dayCheckboxes.forEach(checkbox => {
+            const day = checkbox.dataset.day;
+            if (checkbox.checked) {
+                const startTime = document.querySelector(`.start-time[data-day="${day}"]`).value;
+                const endTime = document.querySelector(`.end-time[data-day="${day}"]`).value;
+                if (startTime && endTime) {
+                    availability[day] = {
+                        start: startTime,
+                        end: endTime
+                    };
+                }
+            }
+        });
+        availabilityJson.value = JSON.stringify(availability);
+        
         form.classList.add('was-validated');
+    });
+    
+    // Handle availability checkboxes
+    const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+    dayCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const day = this.dataset.day;
+            const timesDiv = document.getElementById(`times_${day}`);
+            timesDiv.style.display = this.checked ? 'flex' : 'none';
+        });
+    });
+
+    // Handle image preview
+    portfolioInput.addEventListener('change', function() {
+        imagePreview.innerHTML = '';
+        [...this.files].forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-3';
+                    col.innerHTML = `
+                        <div class="card">
+                            <img src="${e.target.result}" class="card-img-top" alt="Preview">
+                            <div class="card-body">
+                                <p class="card-text small">${file.name}</p>
+                            </div>
+                        </div>
+                    `;
+                    imagePreview.appendChild(col);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
     });
 });
 </script>

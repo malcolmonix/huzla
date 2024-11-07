@@ -20,7 +20,7 @@
                     <div class="mb-3">
                         <label for="title" class="form-label">Service Title</label>
                         <input type="text" class="form-control" id="title" name="title" required 
-                               minlength="5" maxlength="100">
+                               minlength="5" maxlength="100" placeholder="e.g., Professional Photography">
                         <div class="invalid-feedback">
                             Title must be between 5 and 100 characters.
                         </div>
@@ -44,9 +44,9 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="description" class="form-label">Short Description</label>
+                        <label for="description" class="form-label">Short Description (Summary)</label>
                         <textarea class="form-control" id="description" name="description" rows="2" 
-                                  required minlength="20"></textarea>
+                                  required minlength="20" placeholder="Brief overview of your service"></textarea>
                         <div class="invalid-feedback">
                             Description must be at least 20 characters long.
                         </div>
@@ -55,79 +55,115 @@
                     <div class="mb-3">
                         <label for="detailed_description" class="form-label">Detailed Description</label>
                         <textarea class="form-control" id="detailed_description" name="detailed_description" 
-                                  rows="4"></textarea>
+                                  rows="6" placeholder="Provide comprehensive details about your service, including:&#10;- Your experience and qualifications&#10;- What clients can expect&#10;- Special features or advantages&#10;- Service process or methodology"></textarea>
                         <div class="form-text">
-                            Provide a detailed description of your service, including experience and specialties.
+                            A detailed description helps clients understand your service better.
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Service Tags</label>
                         <div class="border rounded p-3">
-                            {% for tag in tags %}
-                            <div class="form-check form-check-inline mb-2">
-                                <input class="form-check-input" type="checkbox" name="tags" 
-                                       id="tag_{{ tag.id }}" value="{{ tag.name }}">
-                                <label class="form-check-label" for="tag_{{ tag.id }}">{{ tag.name }}</label>
+                            <div class="row">
+                                {% for tag in tags %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="tags" 
+                                               id="tag_{{ tag.id }}" value="{{ tag.name }}">
+                                        <label class="form-check-label" for="tag_{{ tag.id }}">{{ tag.name }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
                         <div class="form-text">
                             Select relevant tags to help clients find your service.
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="rate" class="form-label">Hourly Rate ($)</label>
-                            <input type="number" class="form-control" id="rate" name="rate" 
-                                   required min="0" step="0.01">
-                            <div class="invalid-feedback">
-                                Please enter a valid hourly rate.
-                            </div>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Pricing Options</h5>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="project_rate" class="form-label">Project Rate ($) (Optional)</label>
-                            <input type="number" class="form-control" id="project_rate" name="project_rate" 
-                                   min="0" step="0.01">
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="portfolio_images" class="form-label">Portfolio Images</label>
-                        <input type="file" class="form-control" id="portfolio_images" name="portfolio_images" 
-                               multiple accept="image/*">
-                        <div class="form-text">
-                            You can select multiple images. Max size per image: 5MB
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Availability</label>
-                        <div id="availability-container">
-                            {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
-                            <div class="mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input day-checkbox" type="checkbox" 
-                                           id="day_{{ day.lower() }}" data-day="{{ day.lower() }}">
-                                    <label class="form-check-label" for="day_{{ day.lower() }}">
-                                        {{ day }}
-                                    </label>
-                                </div>
-                                <div class="row day-times" id="times_{{ day.lower() }}" style="display: none;">
-                                    <div class="col-6">
-                                        <input type="time" class="form-control start-time" 
-                                               data-day="{{ day.lower() }}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="rate" class="form-label">Hourly Rate ($)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="rate" name="rate" 
+                                               required min="0" step="0.01" placeholder="0.00">
                                     </div>
-                                    <div class="col-6">
-                                        <input type="time" class="form-control end-time" 
-                                               data-day="{{ day.lower() }}">
+                                    <div class="invalid-feedback">
+                                        Please enter a valid hourly rate.
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="project_rate" class="form-label">Project Rate ($) (Optional)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="project_rate" name="project_rate" 
+                                               min="0" step="0.01" placeholder="0.00">
                                     </div>
                                 </div>
                             </div>
-                            {% endfor %}
+                            <div class="form-text">
+                                Set both hourly and project-based rates if applicable.
+                            </div>
                         </div>
-                        <input type="hidden" name="availability" id="availability-json">
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Availability Schedule</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="availability-container">
+                                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                <div class="mb-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" 
+                                               id="day_{{ day.lower() }}" data-day="{{ day.lower() }}">
+                                        <label class="form-check-label" for="day_{{ day.lower() }}">
+                                            {{ day }}
+                                        </label>
+                                    </div>
+                                    <div class="row day-times" id="times_{{ day.lower() }}" style="display: none;">
+                                        <div class="col-6">
+                                            <label class="form-label">Start Time</label>
+                                            <input type="time" class="form-control start-time" 
+                                                   data-day="{{ day.lower() }}">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">End Time</label>
+                                            <input type="time" class="form-control end-time" 
+                                                   data-day="{{ day.lower() }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="availability" id="availability-json">
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Portfolio Images</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <input type="file" class="form-control" id="portfolio_images" name="portfolio_images" 
+                                       multiple accept="image/*">
+                                <div class="form-text">
+                                    Upload images showcasing your work. Select multiple files if needed.
+                                    Supported formats: PNG, JPG, JPEG, GIF. Max size per image: 5MB
+                                </div>
+                            </div>
+                            <div id="image-preview" class="row mt-3">
+                                <!-- Image previews will be inserted here -->
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-grid gap-2">
@@ -145,6 +181,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const availabilityContainer = document.getElementById('availability-container');
     const availabilityJson = document.getElementById('availability-json');
+    const portfolioInput = document.getElementById('portfolio_images');
+    const imagePreview = document.getElementById('image-preview');
     
     // Form validation
     form.addEventListener('submit', function(event) {
@@ -181,6 +219,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const day = this.dataset.day;
             const timesDiv = document.getElementById(`times_${day}`);
             timesDiv.style.display = this.checked ? 'flex' : 'none';
+        });
+    });
+
+    // Handle image preview
+    portfolioInput.addEventListener('change', function() {
+        imagePreview.innerHTML = '';
+        [...this.files].forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-3';
+                    col.innerHTML = `
+                        <div class="card">
+                            <img src="${e.target.result}" class="card-img-top" alt="Preview">
+                            <div class="card-body">
+                                <p class="card-text small">${file.name}</p>
+                            </div>
+                        </div>
+                    `;
+                    imagePreview.appendChild(col);
+                };
+                reader.readAsDataURL(file);
+            }
         });
     });
 });
