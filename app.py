@@ -18,6 +18,14 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
+# Firebase configuration
+app.config["FIREBASE_API_KEY"] = os.environ.get("FIREBASE_API_KEY")
+app.config["FIREBASE_AUTH_DOMAIN"] = os.environ.get("FIREBASE_AUTH_DOMAIN")
+app.config["FIREBASE_PROJECT_ID"] = os.environ.get("FIREBASE_PROJECT_ID")
+app.config["FIREBASE_STORAGE_BUCKET"] = os.environ.get("FIREBASE_STORAGE_BUCKET")
+app.config["FIREBASE_MESSAGING_SENDER_ID"] = os.environ.get("FIREBASE_MESSAGING_SENDER_ID")
+app.config["FIREBASE_APP_ID"] = os.environ.get("FIREBASE_APP_ID")
+
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'

@@ -1,7 +1,6 @@
 from datetime import datetime
 from app import db, login_manager
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
 
 @login_manager.user_loader
 def load_user(id):
@@ -10,18 +9,25 @@ def load_user(id):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256))
+    phone_number = db.Column(db.String(20), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    firebase_uid = db.Column(db.String(128), unique=True, nullable=False)
+    verification_code = db.Column(db.String(6))  # Store temporary verification code
+    verification_code_timestamp = db.Column(db.DateTime)  # For code expiration
     is_provider = db.Column(db.Boolean, default=False)
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     services = db.relationship('Service', backref='provider', lazy=True)
     
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+    def set_verification_code(self, code):
+        self.verification_code = code
+        self.verification_code_timestamp = datetime.utcnow()
         
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    def check_verification_code(self, code):
+        if not self.verification_code or not self.verification_code_timestamp:
+            return False
+        time_diff = (datetime.utcnow() - self.verification_code_timestamp).total_seconds()
+        return self.verification_code == code and time_diff <= 300  # 5 minutes expiration
 
 class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
