@@ -4,6 +4,16 @@ from app import app, db
 from models import User, Service, ServiceRequest, Rating
 from urllib.parse import urlparse
 import re
+from functools import wraps
+
+def provider_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_provider:
+            flash('Access denied. Provider privileges required.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def validate_password(password):
     """Check if password meets requirements."""
@@ -61,27 +71,22 @@ def register():
         latitude = request.form.get('latitude')
         longitude = request.form.get('longitude')
         
-        # Validate required fields
         if not all([username, email, password, latitude, longitude]):
             flash('Please fill in all required fields', 'danger')
             return redirect(url_for('register'))
         
-        # Validate username format
         if not re.match(r'^[A-Za-z0-9_]{3,20}$', username):
             flash('Username must be 3-20 characters long and contain only letters, numbers, and underscores', 'danger')
             return redirect(url_for('register'))
         
-        # Check if username exists
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'danger')
             return redirect(url_for('register'))
         
-        # Check if email exists
         if User.query.filter_by(email=email).first():
             flash('Email already registered', 'danger')
             return redirect(url_for('register'))
         
-        # Validate password
         if not validate_password(password):
             flash('Password must be at least 8 characters long and include uppercase, lowercase, and numbers', 'danger')
             return redirect(url_for('register'))
@@ -110,6 +115,7 @@ def register():
     return render_template('register.html')
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
     flash('Logged out successfully', 'info')
@@ -137,19 +143,125 @@ def api_services():
         'lng': s.provider.longitude
     } for s in services])
 
+@app.route('/service/add', methods=['GET', 'POST'])
+@login_required
+@provider_required
+def add_service():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        rate = request.form.get('rate')
+        
+        if not all([title, description, rate]):
+            flash('Please fill in all fields', 'danger')
+            return redirect(url_for('add_service'))
+        
+        try:
+            service = Service(
+                title=title,
+                description=description,
+                rate=float(rate),
+                provider_id=current_user.id
+            )
+            db.session.add(service)
+            db.session.commit()
+            flash('Service added successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        except ValueError:
+            flash('Invalid rate value', 'danger')
+            return redirect(url_for('add_service'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while adding the service. Please try again.', 'danger')
+            return redirect(url_for('add_service'))
+    
+    return render_template('provider_service_add.html')
+
+@app.route('/service/edit/<int:service_id>', methods=['GET', 'POST'])
+@login_required
+@provider_required
+def edit_service(service_id):
+    service = Service.query.get_or_404(service_id)
+    if service.provider_id != current_user.id:
+        flash('You can only edit your own services', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        rate = request.form.get('rate')
+        
+        if not all([title, description, rate]):
+            flash('Please fill in all fields', 'danger')
+            return redirect(url_for('edit_service', service_id=service_id))
+        
+        try:
+            service.title = title
+            service.description = description
+            service.rate = float(rate)
+            db.session.commit()
+            flash('Service updated successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        except ValueError:
+            flash('Invalid rate value', 'danger')
+            return redirect(url_for('edit_service', service_id=service_id))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating the service. Please try again.', 'danger')
+            return redirect(url_for('edit_service', service_id=service_id))
+    
+    return render_template('provider_service_edit.html', service=service)
+
+@app.route('/service/delete/<int:service_id>', methods=['POST'])
+@login_required
+@provider_required
+def delete_service(service_id):
+    service = Service.query.get_or_404(service_id)
+    if service.provider_id != current_user.id:
+        flash('You can only delete your own services', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        db.session.delete(service)
+        db.session.commit()
+        flash('Service deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the service. Please try again.', 'danger')
+    
+    return redirect(url_for('dashboard'))
+
 @app.route('/service/request/<int:service_id>', methods=['POST'])
 @login_required
 def request_service(service_id):
     service = Service.query.get_or_404(service_id)
     if service.provider_id == current_user.id:
-        flash('You cannot request your own service')
+        flash('You cannot request your own service', 'danger')
         return redirect(url_for('service_detail', id=service_id))
     
     request = ServiceRequest(service_id=service_id, client_id=current_user.id)
     db.session.add(request)
     db.session.commit()
-    flash('Service requested successfully')
+    flash('Service requested successfully', 'success')
     return redirect(url_for('service_detail', id=service_id))
+
+@app.route('/service/request/<int:request_id>/status/<status>', methods=['POST'])
+@login_required
+@provider_required
+def update_request_status(request_id, status):
+    if status not in ['accepted', 'declined']:
+        flash('Invalid status', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    service_request = ServiceRequest.query.get_or_404(request_id)
+    if service_request.service.provider_id != current_user.id:
+        flash('You can only update status for your own service requests', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    service_request.status = status
+    db.session.commit()
+    flash(f'Request {status} successfully', 'success')
+    return redirect(url_for('dashboard'))
 
 @app.route('/dashboard')
 @login_required

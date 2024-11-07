@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Add New Service</h2>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Service Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               minlength="5" maxlength="100">
+                        <div class="invalid-feedback">
+                            Title must be between 5 and 100 characters.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" 
+                                  required minlength="20"></textarea>
+                        <div class="invalid-feedback">
+                            Description must be at least 20 characters long.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rate" class="form-label">Hourly Rate ($)</label>
+                        <input type="number" class="form-control" id="rate" name="rate" 
+                               required min="0" step="0.01">
+                        <div class="invalid-feedback">
+                            Please enter a valid hourly rate.
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Add Service</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}
