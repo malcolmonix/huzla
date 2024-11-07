@@ -16,29 +16,23 @@
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
-                <div id="firebaseui-auth-container"></div>
-                <form method="POST" id="loginForm" style="display: none;">
-                    <input type="hidden" name="id_token" id="idToken">
-                </form>
-                
-                <div class="mb-3 d-none" id="verificationSection">
-                    <label for="verification_code" class="form-label">Verification Code</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="verification_code" 
-                               name="verification_code" pattern="[0-9]{6}" maxlength="6">
-                        <button class="btn btn-outline-secondary" type="button" id="resendCode">
-                            Resend Code
-                        </button>
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                        <div class="invalid-feedback">
+                            Please enter a valid email address.
+                        </div>
                     </div>
-                    <div class="form-text">Enter the 6-digit code sent to your phone</div>
-                </div>
-                <button type="button" class="btn btn-primary w-100" id="requestVerificationBtn">
-                    Request Verification Code
-                </button>
-                <button type="submit" class="btn btn-success w-100 mt-3 d-none" id="submitBtn">
-                    Login
-                </button>
-                
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="invalid-feedback">
+                            Please enter your password.
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
                 <div class="text-center mt-3">
                     <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
                 </div>
@@ -47,90 +41,17 @@
     </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
-<script src="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js"></script>
-<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('loginForm');
-        const verificationSection = document.getElementById('verificationSection');
-        const requestVerificationBtn = document.getElementById('requestVerificationBtn');
-        const submitBtn = document.getElementById('submitBtn');
-        const resendCodeBtn = document.getElementById('resendCode');
-
-        // Initialize the FirebaseUI Widget using Firebase
-        var ui = new firebaseui.auth.AuthUI(firebase.auth());
-
-        var uiConfig = {
-            callbacks: {
-                signInSuccessWithAuthResult: function(authResult) {
-                    // Get the user's ID token
-                    firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
-                        // Add the ID token to the form
-                        document.getElementById('idToken').value = idToken;
-                        // Submit the form
-                        document.getElementById('loginForm').submit();
-                    });
-                    return false;
-                }
-            },
-            signInOptions: [
-                firebase.auth.PhoneAuthProvider.PROVIDER_ID
-            ],
-            signInFlow: 'popup'
-        };
-
-        // Start the FirebaseUI Widget
-        ui.start('#firebaseui-auth-container', uiConfig);
-        
-        // Handle verification code request
-        requestVerificationBtn.addEventListener('click', function() {
-            const phone = document.getElementById('phone').value;
-            const countryCode = document.getElementById('country_code').value;
-            if (!phone || !phone.match(/^\d{10}$/)) {
-                alert('Please enter a valid phone number');
-                return;
-            }
-
-            fetch('/request_verification', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    phone_number: countryCode + phone
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    verificationSection.classList.remove('d-none');
-                    requestVerificationBtn.classList.add('d-none');
-                    submitBtn.classList.remove('d-none');
-                } else {
-                    alert(data.message || 'Error sending verification code');
-                }
-            })
-            .catch(error => {
-                alert('Error sending verification code');
-            });
-        });
-
-        // Handle resend code
-        resendCodeBtn.addEventListener('click', function() {
-            requestVerificationBtn.click();
-        });
-
-        // Form validation
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
     });
+});
 </script>
 {% endblock %}

@@ -3,7 +3,6 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
 from models import User, Service, ServiceRequest, Rating
 from urllib.parse import urlparse
-import requests
 import re
 
 def validate_password(password):
@@ -18,20 +17,6 @@ def validate_password(password):
         return False
     return True
 
-def verify_firebase_token(id_token):
-    """Verify Firebase ID token."""
-    try:
-        response = requests.get(
-            f'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={app.config["FIREBASE_API_KEY"]}',
-            params={'idToken': id_token}
-        )
-        if response.status_code == 200:
-            user_data = response.json()['users'][0]
-            return user_data
-        return None
-    except Exception:
-        return None
-
 @app.route('/')
 def index():
     return redirect(url_for('service_list'))
@@ -42,26 +27,22 @@ def login():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        id_token = request.form.get('id_token')
-        if not id_token:
-            flash('No ID token provided', 'danger')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if not email or not password:
+            flash('Please fill in all fields', 'danger')
             return redirect(url_for('login'))
-
-        firebase_user = verify_firebase_token(id_token)
-        if not firebase_user:
-            flash('Invalid token', 'danger')
+        
+        user = User.query.filter_by(email=email).first()
+        if user is None or not user.check_password(password):
+            flash('Invalid email or password', 'danger')
             return redirect(url_for('login'))
-
-        user = User.query.filter_by(firebase_uid=firebase_user['localId']).first()
-        if not user:
-            flash('User not registered', 'danger')
-            return redirect(url_for('login'))
-
+        
         login_user(user)
         next_page = request.args.get('next')
         if not next_page or urlparse(next_page).netloc != '':
             next_page = url_for('index')
-
         flash('Logged in successfully!', 'success')
         return redirect(next_page)
     
@@ -73,58 +54,59 @@ def register():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        id_token = request.form.get('id_token')
         username = request.form.get('username')
-        phone_number = request.form.get('phone_number')
         email = request.form.get('email')
+        password = request.form.get('password')
         is_provider = request.form.get('is_provider') == 'on'
         latitude = request.form.get('latitude')
         longitude = request.form.get('longitude')
         
-        if not all([id_token, username, phone_number, email, latitude, longitude]):
+        # Validate required fields
+        if not all([username, email, password, latitude, longitude]):
             flash('Please fill in all required fields', 'danger')
             return redirect(url_for('register'))
-
-        firebase_user = verify_firebase_token(id_token)
-        if not firebase_user:
-            flash('Invalid token', 'danger')
+        
+        # Validate username format
+        if not re.match(r'^[A-Za-z0-9_]{3,20}$', username):
+            flash('Username must be 3-20 characters long and contain only letters, numbers, and underscores', 'danger')
             return redirect(url_for('register'))
-
+        
+        # Check if username exists
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'danger')
             return redirect(url_for('register'))
         
-        if User.query.filter_by(phone_number=phone_number).first():
-            flash('Phone number already registered', 'danger')
+        # Check if email exists
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'danger')
             return redirect(url_for('register'))
-
+        
         # Validate password
-        password = request.form.get('password')
         if not validate_password(password):
             flash('Password must be at least 8 characters long and include uppercase, lowercase, and numbers', 'danger')
             return redirect(url_for('register'))
-
+        
         try:
             user = User(
                 username=username,
-                phone_number=phone_number,
                 email=email,
-                firebase_uid=firebase_user['localId'],
                 is_provider=is_provider,
                 latitude=float(latitude),
                 longitude=float(longitude)
             )
+            user.set_password(password)
             db.session.add(user)
             db.session.commit()
-            login_user(user)
             flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('index'))
-
-        except Exception:
+            return redirect(url_for('login'))
+        except ValueError:
+            flash('Invalid location coordinates', 'danger')
+            return redirect(url_for('register'))
+        except Exception as e:
             db.session.rollback()
             flash('An error occurred during registration. Please try again.', 'danger')
             return redirect(url_for('register'))
-
+    
     return render_template('register.html')
 
 @app.route('/logout')
