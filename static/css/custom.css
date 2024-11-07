@@ -1,27 +1,159 @@
-/* Custom styles using Bootstrap variables */
-.navbar {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* Base styles and utilities */
+:root {
+    --navbar-height: 56px;
+    --bottom-nav-height: 65px;
 }
 
-#map, #provider-map {
-    border-radius: var(--bs-border-radius);
-    border: 1px solid var(--bs-border-color);
+body {
+    padding-top: var(--navbar-height);
+    padding-bottom: var(--bottom-nav-height);
 }
 
-.alert {
+.content-wrapper {
+    min-height: calc(100vh - var(--navbar-height) - var(--bottom-nav-height));
+    padding: 1rem 0;
+}
+
+/* Animations and Transitions */
+.fade {
     transition: opacity 0.3s ease-in-out;
 }
 
+.alert {
+    transition: all 0.3s ease-in-out;
+}
+
 .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     border: 1px solid var(--bs-border-color);
     margin-bottom: 1rem;
 }
 
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Button and Input Enhancements */
+.btn {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.form-control {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Loading States */
+.loading {
+    position: relative;
+}
+
+.loading::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 992px) {
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        min-height: 44px; /* Touch target size */
+    }
+    
+    .form-control {
+        min-height: 44px;
+    }
+    
+    .list-group-item {
+        padding: 1rem;
+    }
+}
+
+/* Maps */
+#map, #provider-map {
+    border-radius: var(--bs-border-radius);
+    border: 1px solid var(--bs-border-color);
+    transition: all 0.3s ease;
+}
+
+/* List Items */
 .list-group-item {
     background-color: var(--bs-dark);
     border-color: var(--bs-border-color);
+    transition: background-color 0.2s ease;
 }
 
 .list-group-item:hover {
     background-color: var(--bs-dark-bg-subtle);
+}
+
+/* Service Cards */
+.service-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.service-card .card-body {
+    flex: 1;
+}
+
+/* Pull to Refresh Animation */
+.pull-to-refresh {
+    height: 60px;
+    margin-top: -60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: margin-top 0.3s ease;
+}
+
+.pull-to-refresh.active {
+    margin-top: 0;
+}
+
+/* Touch-friendly Navigation */
+.bottom-nav-link {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--bs-light);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.bottom-nav-link:hover {
+    color: var(--bs-primary);
+}
+
+.bottom-nav-link i {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
 }
