@@ -27,6 +27,23 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="category_id" class="form-label">Service Category</label>
+                        <select class="form-select" id="category_id" name="category_id" required>
+                            <option value="">Select a category...</option>
+                            {% for main_category in categories %}
+                                <optgroup label="{{ main_category.name }}">
+                                    {% for subcategory in main_category.subcategories %}
+                                        <option value="{{ subcategory.id }}">{{ subcategory.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a service category.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="description" class="form-label">Short Description</label>
                         <textarea class="form-control" id="description" name="description" rows="2" 
                                   required minlength="20"></textarea>
@@ -45,14 +62,18 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="tags" class="form-label">Service Tags</label>
-                        <select class="form-select" id="tags" name="tags" multiple>
+                        <label class="form-label">Service Tags</label>
+                        <div class="border rounded p-3">
                             {% for tag in tags %}
-                            <option value="{{ tag.name }}">{{ tag.name }}</option>
+                            <div class="form-check form-check-inline mb-2">
+                                <input class="form-check-input" type="checkbox" name="tags" 
+                                       id="tag_{{ tag.id }}" value="{{ tag.name }}">
+                                <label class="form-check-label" for="tag_{{ tag.id }}">{{ tag.name }}</label>
+                            </div>
                             {% endfor %}
-                        </select>
+                        </div>
                         <div class="form-text">
-                            Hold Ctrl (Cmd on Mac) to select multiple tags.
+                            Select relevant tags to help clients find your service.
                         </div>
                     </div>
 

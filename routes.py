@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, request, jsonify, c
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from app import app, db
-from models import User, Service, ServiceRequest, Rating, ServiceTag
+from models import User, Service, ServiceRequest, Rating, ServiceTag, ServiceCategory
 from urllib.parse import urlparse
 import re
 import os
@@ -177,10 +177,11 @@ def add_service():
         detailed_description = request.form.get('detailed_description')
         rate = request.form.get('rate')
         project_rate = request.form.get('project_rate')
+        category_id = request.form.get('category_id')
         tag_names = request.form.getlist('tags')
         availability = request.form.get('availability')
         
-        if not all([title, description, rate]):
+        if not all([title, description, rate, category_id]):
             flash('Please fill in all required fields', 'danger')
             return redirect(url_for('add_service'))
         
@@ -209,6 +210,7 @@ def add_service():
                 rate=float(rate),
                 project_rate=float(project_rate) if project_rate else None,
                 provider_id=current_user.id,
+                category_id=category_id,
                 portfolio_images=portfolio_images,
                 availability=json.loads(availability) if availability else None,
                 tags=tags
@@ -225,8 +227,10 @@ def add_service():
             flash('An error occurred while adding the service. Please try again.', 'danger')
             return redirect(url_for('add_service'))
     
+    # Get all main categories with their subcategories
+    categories = ServiceCategory.query.filter_by(parent_id=None).all()
     tags = ServiceTag.query.all()
-    return render_template('provider_service_add.html', tags=tags)
+    return render_template('provider_service_add.html', categories=categories, tags=tags)
 
 @app.route('/service/edit/<int:service_id>', methods=['GET', 'POST'])
 @login_required
