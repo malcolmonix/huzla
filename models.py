@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     is_provider = db.Column(db.Boolean, default=False)
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
+    profile_image = db.Column(db.String(255))  # Store image path
     services = db.relationship('Service', backref='provider', lazy=True)
     
     def set_password(self, password):
@@ -23,13 +24,28 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+class ServiceTag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+service_tags = db.Table('service_tags',
+    db.Column('service_id', db.Integer, db.ForeignKey('service.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('service_tag.id'), primary_key=True)
+)
+
 class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    rate = db.Column(db.Float, nullable=False)
+    detailed_description = db.Column(db.Text)  # For longer, formatted description
+    rate = db.Column(db.Float, nullable=False)  # Base hourly rate
+    project_rate = db.Column(db.Float)  # Optional project-based rate
     provider_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    portfolio_images = db.Column(db.JSON)  # Store array of image paths
+    availability = db.Column(db.JSON)  # Store availability schedule
+    tags = db.relationship('ServiceTag', secondary=service_tags, lazy='subquery',
+        backref=db.backref('services', lazy=True))
     requests = db.relationship('ServiceRequest', backref='service', lazy=True)
 
 class ServiceRequest(db.Model):

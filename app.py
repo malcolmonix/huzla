@@ -18,6 +18,16 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
+# File Upload Configuration
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['ALLOWED_IMAGE_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Create upload directory if it doesn't exist
+os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
+os.makedirs(os.path.join('static', 'uploads', 'profiles'), exist_ok=True)
+os.makedirs(os.path.join('static', 'uploads', 'portfolio'), exist_ok=True)
+
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'

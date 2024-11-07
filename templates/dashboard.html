@@ -3,18 +3,46 @@
 {% block content %}
 <div class="container">
     <div class="row mb-4">
-        <div class="col">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Profile</h3>
+                    <div class="text-center mb-3">
+                        {% if current_user.profile_image %}
+                        <img src="{{ url_for('static', filename=current_user.profile_image) }}" 
+                             class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto"
+                             style="width: 150px; height: 150px;">
+                            <i class="bi bi-person-fill" style="font-size: 4rem;"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <form action="{{ url_for('update_profile_image') }}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="profile_image" class="form-label">Update Profile Image</label>
+                            <input type="file" class="form-control" id="profile_image" name="profile_image" 
+                                   accept="image/*" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Upload Image</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
             <h2>Dashboard</h2>
+            {% if current_user.is_provider %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>My Services</h3>
+                <a href="{{ url_for('add_service') }}" class="btn btn-primary">Add New Service</a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     {% if current_user.is_provider %}
     <div class="row mb-4">
         <div class="col">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>My Services</h3>
-                <a href="{{ url_for('add_service') }}" class="btn btn-primary">Add New Service</a>
-            </div>
             {% if services %}
             <div class="list-group">
                 {% for service in services %}
@@ -23,7 +51,15 @@
                         <div>
                             <h5 class="mb-1">{{ service.title }}</h5>
                             <p class="mb-1">{{ service.description }}</p>
+                            <div class="mb-2">
+                                {% for tag in service.tags %}
+                                <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                                {% endfor %}
+                            </div>
                             <small class="text-muted">Rate: ${{ "%.2f"|format(service.rate) }}/hr</small>
+                            {% if service.project_rate %}
+                            <small class="text-muted ms-2">Project Rate: ${{ "%.2f"|format(service.project_rate) }}</small>
+                            {% endif %}
                         </div>
                         <div class="btn-group" role="group">
                             <a href="{{ url_for('edit_service', service_id=service.id) }}" 
@@ -35,6 +71,16 @@
                             </form>
                         </div>
                     </div>
+                    {% if service.portfolio_images %}
+                    <div class="row mt-2">
+                        {% for image in service.portfolio_images %}
+                        <div class="col-md-3 mb-2">
+                            <img src="{{ url_for('static', filename=image) }}" class="img-thumbnail" 
+                                 alt="Portfolio image">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>

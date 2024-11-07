@@ -1,9 +1,14 @@
-from flask import render_template, redirect, url_for, flash, request, jsonify
+from flask import render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.utils import secure_filename
 from app import app, db
-from models import User, Service, ServiceRequest, Rating
+from models import User, Service, ServiceRequest, Rating, ServiceTag
 from urllib.parse import urlparse
 import re
+import os
+import json
+from datetime import datetime
+from PIL import Image
 from functools import wraps
 
 def provider_required(f):
@@ -14,6 +19,25 @@ def provider_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_IMAGE_EXTENSIONS']
+
+def save_image(file, folder):
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_{filename}"
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], folder, filename)
+        
+        # Save and optimize image
+        img = Image.open(file)
+        img.thumbnail((800, 800))  # Resize if too large
+        img.save(filepath, optimize=True, quality=85)
+        
+        return os.path.join(folder, filename)
+    return None
 
 def validate_password(password):
     """Check if password meets requirements."""
@@ -150,18 +174,44 @@ def add_service():
     if request.method == 'POST':
         title = request.form.get('title')
         description = request.form.get('description')
+        detailed_description = request.form.get('detailed_description')
         rate = request.form.get('rate')
+        project_rate = request.form.get('project_rate')
+        tag_names = request.form.getlist('tags')
+        availability = request.form.get('availability')
         
         if not all([title, description, rate]):
-            flash('Please fill in all fields', 'danger')
+            flash('Please fill in all required fields', 'danger')
             return redirect(url_for('add_service'))
         
         try:
+            # Handle portfolio images
+            portfolio_images = []
+            for file in request.files.getlist('portfolio_images'):
+                if file:
+                    filepath = save_image(file, 'portfolio')
+                    if filepath:
+                        portfolio_images.append(filepath)
+
+            # Process tags
+            tags = []
+            for tag_name in tag_names:
+                tag = ServiceTag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = ServiceTag(name=tag_name)
+                    db.session.add(tag)
+                tags.append(tag)
+
             service = Service(
                 title=title,
                 description=description,
+                detailed_description=detailed_description,
                 rate=float(rate),
-                provider_id=current_user.id
+                project_rate=float(project_rate) if project_rate else None,
+                provider_id=current_user.id,
+                portfolio_images=portfolio_images,
+                availability=json.loads(availability) if availability else None,
+                tags=tags
             )
             db.session.add(service)
             db.session.commit()
@@ -175,7 +225,8 @@ def add_service():
             flash('An error occurred while adding the service. Please try again.', 'danger')
             return redirect(url_for('add_service'))
     
-    return render_template('provider_service_add.html')
+    tags = ServiceTag.query.all()
+    return render_template('provider_service_add.html', tags=tags)
 
 @app.route('/service/edit/<int:service_id>', methods=['GET', 'POST'])
 @login_required
@@ -276,3 +327,35 @@ def dashboard():
         services = []
     
     return render_template('dashboard.html', services=services, requests=requests)
+
+@app.route('/update_profile_image', methods=['POST'])
+@login_required
+def update_profile_image():
+    if 'profile_image' not in request.files:
+        flash('No file provided', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    file = request.files['profile_image']
+    if file.filename == '':
+        flash('No file selected', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        filepath = save_image(file, 'profiles')
+        if filepath:
+            if current_user.profile_image:
+                # Delete old profile image
+                old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            
+            current_user.profile_image = filepath
+            db.session.commit()
+            flash('Profile image updated successfully!', 'success')
+        else:
+            flash('Invalid file type', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating profile image', 'danger')
+    
+    return redirect(url_for('dashboard'))
