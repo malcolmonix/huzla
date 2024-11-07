@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Dashboard</h2>
+
+{% if current_user.is_provider %}
+<div class="row mb-4">
+    <div class="col">
+        <h3>My Services</h3>
+        <div class="list-group">
+            {% for service in services %}
+            <div class="list-group-item">
+                <h5>{{ service.title }}</h5>
+                <p>{{ service.description }}</p>
+                <p>Rate: ${{ "%.2f"|format(service.rate) }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <h3>Service Requests</h3>
+        <div class="list-group">
+            {% for request in requests %}
+            <div class="list-group-item">
+                <h5>{{ request.service.title }}</h5>
+                <p>Requested by: {{ request.client.username }}</p>
+                <p>Status: {{ request.status }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col">
+        <h3>My Service Requests</h3>
+        <div class="list-group">
+            {% for request in requests %}
+            <div class="list-group-item">
+                <h5>{{ request.service.title }}</h5>
+                <p>Provider: {{ request.service.provider.username }}</p>
+                <p>Status: {{ request.status }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

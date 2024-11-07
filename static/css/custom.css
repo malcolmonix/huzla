@@ -1,0 +1,27 @@
+/* Custom styles using Bootstrap variables */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#map, #provider-map {
+    border-radius: var(--bs-border-radius);
+    border: 1px solid var(--bs-border-color);
+}
+
+.alert {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.card {
+    border: 1px solid var(--bs-border-color);
+    margin-bottom: 1rem;
+}
+
+.list-group-item {
+    background-color: var(--bs-dark);
+    border-color: var(--bs-border-color);
+}
+
+.list-group-item:hover {
+    background-color: var(--bs-dark-bg-subtle);
+}

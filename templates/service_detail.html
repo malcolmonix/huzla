@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>{{ service.title }}</h2>
+        <p class="lead">${{ "%.2f"|format(service.rate) }}</p>
+        <p>{{ service.description }}</p>
+        
+        <div class="mb-4">
+            <h4>Provider Information</h4>
+            <p>{{ service.provider.username }}</p>
+        </div>
+
+        {% if current_user.is_authenticated and not current_user.is_provider %}
+        <form action="{{ url_for('request_service', service_id=service.id) }}" method="POST">
+            <button type="submit" class="btn btn-primary">Request Service</button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div id="provider-map" style="height: 300px;" class="mb-4"></div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col">
+        <h3>Reviews</h3>
+        {% for rating in service.ratings %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Rating: {{ rating.rating }}/5</h5>
+                <p class="card-text">{{ rating.comment }}</p>
+                <small class="text-muted">By {{ rating.client.username }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const providerLocation = {
+        lat: {{ service.provider.latitude }},
+        lng: {{ service.provider.longitude }}
+    };
+</script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}
