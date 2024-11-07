@@ -38,6 +38,7 @@ class ServiceRequest(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     status = db.Column(db.String(20), default='pending')  # pending, accepted, declined, completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    client = db.relationship('User', backref='requested_services', lazy=True, foreign_keys=[client_id])
     
 class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)

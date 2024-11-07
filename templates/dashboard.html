@@ -55,8 +55,8 @@
                 <div class="list-group-item">
                     <div class="d-flex w-100 justify-content-between align-items-center">
                         <div>
-                            <h5 class="mb-1">{{ request.service.title }}</h5>
-                            <p class="mb-1">Requested by: {{ request.client.username }}</p>
+                            <h5 class="mb-1">{{ request.service.title if request.service else 'Unknown Service' }}</h5>
+                            <p class="mb-1">Requested by: {{ request.client.username if request.client else 'Unknown User' }}</p>
                             <small class="text-muted">Status: {{ request.status }}</small>
                         </div>
                         {% if request.status == 'pending' %}
@@ -90,8 +90,8 @@
                 <div class="list-group-item">
                     <div class="d-flex w-100 justify-content-between align-items-center">
                         <div>
-                            <h5 class="mb-1">{{ request.service.title }}</h5>
-                            <p class="mb-1">Provider: {{ request.service.provider.username }}</p>
+                            <h5 class="mb-1">{{ request.service.title if request.service else 'Unknown Service' }}</h5>
+                            <p class="mb-1">Provider: {{ request.service.provider.username if request.service and request.service.provider else 'Unknown Provider' }}</p>
                             <small class="text-muted">Status: {{ request.status }}</small>
                         </div>
                         {% if request.status == 'accepted' %}
