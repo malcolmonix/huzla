@@ -6,18 +6,39 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Register</h2>
-                <form method="POST">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <form method="POST" id="registerForm" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <input type="text" class="form-control" id="username" name="username" required 
+                               pattern="[A-Za-z0-9_]{3,20}" minlength="3" maxlength="20">
+                        <div class="invalid-feedback">
+                            Username must be 3-20 characters long and contain only letters, numbers, and underscores.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email" required>
+                        <div class="invalid-feedback">
+                            Please enter a valid email address.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               required minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}">
+                        <div class="invalid-feedback">
+                            Password must be at least 8 characters long and include uppercase, lowercase, and numbers.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -25,9 +46,15 @@
                             <label class="form-check-label" for="is_provider">Register as Service Provider</label>
                         </div>
                     </div>
-                    <input type="hidden" id="latitude" name="latitude">
-                    <input type="hidden" id="longitude" name="longitude">
-                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                    <div class="mb-3" id="locationStatus">
+                        <div class="alert alert-info">
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            Getting your location...
+                        </div>
+                    </div>
+                    <input type="hidden" id="latitude" name="latitude" required>
+                    <input type="hidden" id="longitude" name="longitude" required>
+                    <button type="submit" class="btn btn-primary w-100" id="submitBtn" disabled>Register</button>
                 </form>
             </div>
         </div>
@@ -35,12 +62,52 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const locationStatus = document.getElementById('locationStatus');
+    const submitBtn = document.getElementById('submitBtn');
+
     // Get user's location for registration
     if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            document.getElementById('latitude').value = position.coords.latitude;
-            document.getElementById('longitude').value = position.coords.longitude;
-        });
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                locationStatus.innerHTML = '<div class="alert alert-success">Location captured successfully!</div>';
+                submitBtn.disabled = false;
+            },
+            function(error) {
+                let errorMessage = 'Error getting location: ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Location permission denied.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location information unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Location request timed out.';
+                        break;
+                    default:
+                        errorMessage += 'Unknown error occurred.';
+                }
+                locationStatus.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
+                submitBtn.disabled = true;
+            }
+        );
+    } else {
+        locationStatus.innerHTML = '<div class="alert alert-danger">Geolocation is not supported by your browser.</div>';
+        submitBtn.disabled = true;
     }
+
+    // Form validation
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
 </script>
 {% endblock %}
