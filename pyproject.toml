@@ -13,4 +13,6 @@ dependencies = [
     "sqlalchemy",
     "werkzeug",
     "pillow>=11.0.0",
+    "requests-oauthlib>=2.0.0",
+    "google-auth>=2.36.0",
 ]
