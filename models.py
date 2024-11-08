@@ -13,12 +13,10 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     is_provider = db.Column(db.Boolean, default=False)
-    is_admin = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)  # New admin role
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
-    profile_image = db.Column(db.String(255))
-    google_id = db.Column(db.String(128), unique=True)  # Added for Google OAuth
-    is_google_auth = db.Column(db.Boolean, default=False)  # Added for Google OAuth
+    profile_image = db.Column(db.String(255))  # Store image path
     services = db.relationship('Service', backref='provider', lazy=True)
     
     def set_password(self, password):
