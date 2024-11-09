@@ -13,10 +13,8 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     is_provider = db.Column(db.Boolean, default=False)
-    is_admin = db.Column(db.Boolean, default=False)  # New admin role
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    profile_image = db.Column(db.String(255))  # Store image path
+    is_admin = db.Column(db.Boolean, default=False)
+    profile_image = db.Column(db.String(255))
     services = db.relationship('Service', backref='provider', lazy=True)
     
     def set_password(self, password):
@@ -61,6 +59,8 @@ class Service(db.Model):
     tags = db.relationship('ServiceTag', secondary=service_tags, lazy='subquery',
         backref=db.backref('services', lazy=True))
     requests = db.relationship('ServiceRequest', backref='service', lazy=True)
+    state_id = db.Column(db.Integer, db.ForeignKey('state.id'), nullable=True)
+    state = db.relationship('State', backref='services')
 
 class ServiceRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,3 +77,13 @@ class Rating(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Region(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    states = db.relationship('State', backref='region', lazy=True)
+
+class State(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    region_id = db.Column(db.Integer, db.ForeignKey('region.id'), nullable=False)

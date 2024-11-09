@@ -114,11 +114,8 @@
             </div>
         </div>
         
-        <!-- Map and Reviews Section -->
+        <!-- Reviews Section -->
         <div class="col-md-4">
-            <div id="provider-map" style="height: 300px;" class="mb-4"></div>
-
-            <!-- Reviews Section -->
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Reviews</h5>
@@ -155,14 +152,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    const providerLocation = {
-        lat: {{ service.provider.latitude }},
-        lng: {{ service.provider.longitude }}
-    };
-</script>
-<script src="{{ url_for('static', filename='js/map.js') }}"></script>
 {% endblock %}

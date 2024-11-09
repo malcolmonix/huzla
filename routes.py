@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_
 from app import app, db
-from models import User, Service, ServiceRequest, Rating, ServiceTag, ServiceCategory
+from models import User, Service, ServiceRequest, Rating, ServiceTag, ServiceCategory, Region, State
 from urllib.parse import urlparse
 import re
 import os
@@ -93,10 +93,8 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         is_provider = request.form.get('is_provider') == 'on'
-        latitude = request.form.get('latitude')
-        longitude = request.form.get('longitude')
         
-        if not all([username, email, password, latitude, longitude]):
+        if not all([username, email, password]):
             flash('Please fill in all required fields', 'danger')
             return redirect(url_for('register'))
         
@@ -121,17 +119,12 @@ def register():
                 username=username,
                 email=email,
                 is_provider=is_provider,
-                latitude=float(latitude),
-                longitude=float(longitude)
             )
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
-        except ValueError:
-            flash('Invalid location coordinates', 'danger')
-            return redirect(url_for('register'))
         except Exception as e:
             db.session.rollback()
             flash('An error occurred during registration. Please try again.', 'danger')
@@ -150,6 +143,8 @@ def logout():
 def service_list():
     search_query = request.args.get('q', '')
     category_id = request.args.get('category')
+    region_id = request.args.get('region')
+    state_id = request.args.get('state')
     
     query = Service.query
     
@@ -166,29 +161,26 @@ def service_list():
     if category_id:
         query = query.filter(Service.category_id == category_id)
     
+    if state_id:
+        query = query.filter(Service.state_id == state_id)
+    elif region_id:
+        query = query.join(State).filter(State.region_id == region_id)
+    
     services = query.all()
     categories = ServiceCategory.query.filter_by(parent_id=None).all()
+    regions = Region.query.all()
+    states = State.query.all()
     
-    return render_template('service_list.html', 
+    return render_template('service_list.html',
                          services=services,
-                         categories=categories)
+                         categories=categories,
+                         regions=regions,
+                         states=states)
 
 @app.route('/service/<int:id>')
 def service_detail(id):
     service = Service.query.get_or_404(id)
     return render_template('service_detail.html', service=service)
-
-@app.route('/api/services')
-def api_services():
-    services = Service.query.all()
-    return jsonify([{
-        'id': s.id,
-        'title': s.title,
-        'provider': s.provider.username,
-        'rate': s.rate,
-        'lat': s.provider.latitude,
-        'lng': s.provider.longitude
-    } for s in services])
 
 @app.route('/service/add', methods=['GET', 'POST'])
 @login_required

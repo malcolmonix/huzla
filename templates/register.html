@@ -40,20 +40,10 @@
                             Password must be at least 8 characters long and include uppercase, lowercase, and numbers.
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="is_provider" name="is_provider">
-                            <label class="form-check-label" for="is_provider">Register as Service Provider</label>
-                        </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_provider" name="is_provider">
+                        <label class="form-check-label" for="is_provider">Register as Service Provider</label>
                     </div>
-                    <div class="mb-3" id="locationStatus">
-                        <div class="alert alert-info">
-                            <span class="spinner-border spinner-border-sm" role="status"></span>
-                            Getting your location...
-                        </div>
-                    </div>
-                    <input type="hidden" id="latitude" name="latitude" required>
-                    <input type="hidden" id="longitude" name="longitude" required>
                     <button type="submit" class="btn btn-primary w-100" id="submitBtn" disabled>Register</button>
                 </form>
             </div>
@@ -64,41 +54,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('registerForm');
-    const locationStatus = document.getElementById('locationStatus');
     const submitBtn = document.getElementById('submitBtn');
-
-    // Get user's location for registration
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                document.getElementById('latitude').value = position.coords.latitude;
-                document.getElementById('longitude').value = position.coords.longitude;
-                locationStatus.innerHTML = '<div class="alert alert-success">Location captured successfully!</div>';
-                submitBtn.disabled = false;
-            },
-            function(error) {
-                let errorMessage = 'Error getting location: ';
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage += 'Location permission denied.';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage += 'Location information unavailable.';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage += 'Location request timed out.';
-                        break;
-                    default:
-                        errorMessage += 'Unknown error occurred.';
-                }
-                locationStatus.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
-                submitBtn.disabled = true;
-            }
-        );
-    } else {
-        locationStatus.innerHTML = '<div class="alert alert-danger">Geolocation is not supported by your browser.</div>';
-        submitBtn.disabled = true;
-    }
 
     // Form validation
     form.addEventListener('submit', function(event) {

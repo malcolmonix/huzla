@@ -1,76 +1,90 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
-    <div class="row mb-4">
-        <div class="col">
-            <h2>Available Services</h2>
+<div class="search-bar">
+    <form id="searchForm">
+        <div class="input-group">
+            <input type="text" class="form-control" id="searchInput" name="q" 
+                   placeholder="Search services..." value="{{ request.args.get('q', '') }}">
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-search"></i>
+            </button>
         </div>
-    </div>
+    </form>
+</div>
 
-    <!-- Search Form -->
-    <div class="row mb-4">
-        <div class="col">
-            <form id="searchForm" class="card p-3">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <input type="text" class="form-control" id="searchInput" name="q" 
-                               placeholder="Search services..." value="{{ request.args.get('q', '') }}">
-                    </div>
-                    <div class="col-md-4">
-                        <select class="form-select" id="categorySelect" name="category">
-                            <option value="">All Categories</option>
-                            {% for category in categories %}
-                                <option value="{{ category.id }}" 
-                                        {% if request.args.get('category')|int == category.id %}selected{% endif %}>
-                                    {{ category.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary w-100">Search</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+<div class="category-scroll mb-3">
+    <a href="{{ url_for('service_list') }}" 
+       class="category-pill {% if not request.args.get('category') %}active{% endif %}">
+        All
+    </a>
+    {% for category in categories %}
+    <a href="{{ url_for('service_list', category=category.id) }}" 
+       class="category-pill {% if request.args.get('category')|int == category.id %}active{% endif %}">
+        {{ category.name }}
+    </a>
+    {% endfor %}
+</div>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div id="map" style="height: 400px;" class="mb-4"></div>
-        </div>
-        <div class="col-md-4">
-            <div class="list-group" id="servicesList">
-                {% for service in services %}
-                <a href="{{ url_for('service_detail', id=service.id) }}" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ service.title }}</h5>
-                        <small>${{ "%.2f"|format(service.rate) }}</small>
-                    </div>
-                    <p class="mb-1">{{ service.description[:100] }}...</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small>Provided by {{ service.provider.username }}</small>
-                        <div>
-                            {% for tag in service.tags[:3] %}
-                            <span class="badge bg-secondary">{{ tag.name }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </a>
+<div class="filters mb-3">
+    <div class="row g-2">
+        <div class="col-md-3">
+            <select class="form-select" id="regionFilter" name="region">
+                <option value="">All Regions</option>
+                {% for region in regions %}
+                <option value="{{ region.id }}" 
+                        {% if request.args.get('region')|int == region.id %}selected{% endif %}>
+                    {{ region.name }}
+                </option>
                 {% endfor %}
-            </div>
-            {% if not services %}
-            <div class="alert alert-info">
-                No services found matching your criteria.
-            </div>
-            {% endif %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="stateFilter" name="state">
+                <option value="">All States</option>
+                {% for state in states %}
+                <option value="{{ state.id }}" 
+                        {% if request.args.get('state')|int == state.id %}selected{% endif %}
+                        data-region="{{ state.region_id }}">
+                    {{ state.name }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/map.js') }}"></script>
-<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+<div class="container-fluid px-2">
+    {% if services %}
+    <div class="service-grid">
+        {% for service in services %}
+        <div class="service-card card">
+            {% if service.portfolio_images %}
+            <img src="{{ url_for('static', filename=service.portfolio_images[0]) }}" 
+                 class="card-img-top" alt="{{ service.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ service.title }}</h5>
+                <p class="card-text">{{ service.description }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-primary">${{ "%.2f"|format(service.rate) }}/hr</div>
+                    <a href="{{ url_for('service_detail', id=service.id) }}" 
+                       class="btn btn-primary btn-sm">View Details</a>
+                </div>
+                <div class="mt-2">
+                    {% for tag in service.tags[:3] %}
+                    <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-search display-4"></i>
+        <p class="mt-3">No services found</p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

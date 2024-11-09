@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
+from flask_migrate import Migrate
 
 class Base(DeclarativeBase):
     pass
@@ -31,6 +32,8 @@ os.makedirs(os.path.join('static', 'uploads', 'portfolio'), exist_ok=True)
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+migrate = Migrate(app, db)
 
 with app.app_context():
     import models
